@@ -31,14 +31,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sharing",
-      [
-        "expo-speech-recognition",
-        {
-          "microphonePermission": "Jarvis needs your microphone to hear voice commands.",
-          "speechRecognitionPermission": "Jarvis uses speech recognition to understand what you say."
-        }
-      ]
+      "expo-sharing"
     ]
   }
 }
