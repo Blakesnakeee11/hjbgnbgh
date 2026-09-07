@@ -2,14 +2,11 @@
 title Jarvis Bridge Server
 echo ============================================
 echo   Jarvis Bridge Server
-echo   Using Claude from your subscription
+echo   Using Claude Code with your subscription
 echo ============================================
 echo.
 
-:: Set path to your Claude installation
-set CLAUDE_CWD=C:\Users\blake\my-agent
-
-:: Start the server
+npm install
 npx tsx index.ts
 
 pause
