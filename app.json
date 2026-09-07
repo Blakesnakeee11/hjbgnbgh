@@ -33,12 +33,6 @@
     "plugins": [
       "expo-sharing",
       [
-        "expo-av",
-        {
-          "microphonePermission": "Jarvis needs microphone access to hear your voice commands."
-        }
-      ],
-      [
         "expo-speech-recognition",
         {
           "microphonePermission": "Jarvis needs your microphone to hear voice commands.",
