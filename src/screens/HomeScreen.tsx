@@ -20,7 +20,7 @@ import { ConversationEntry } from '../types';
 
 export function HomeScreen() {
   const [conversation, setConversation] = useState<ConversationEntry[]>([
-    createEntry('jarvis', "Good day, sir. I'm Jarvis, your personal assistant. I can organize your files, open apps, and help manage your device. Just speak or type a command."),
+    createEntry('jarvis', "Good day, sir. I'm Jarvis, your personal AI assistant. I can organise your files, open apps, manage your device, and hold a proper conversation. Just speak or type a command."),
   ]);
   const [isProcessing, setIsProcessing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
