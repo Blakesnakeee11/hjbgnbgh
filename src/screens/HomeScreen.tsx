@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
+  Text,
   StyleSheet,
   FlatList,
   KeyboardAvoidingView,
@@ -24,6 +25,7 @@ export function HomeScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const voice = useVoiceRecognition();
+  const hasProcessedTranscript = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -66,21 +68,23 @@ export function HomeScreen() {
     }
   }, [isProcessing, scrollToBottom]);
 
+  // When we get a final transcript from speech recognition, process it
+  useEffect(() => {
+    if (voice.transcript && !hasProcessedTranscript.current) {
+      hasProcessedTranscript.current = true;
+      handleCommand(voice.transcript);
+    }
+  }, [voice.transcript, handleCommand]);
+
   const handleVoicePress = useCallback(async () => {
     if (voice.state === 'listening') {
-      const transcript = await voice.stopListening();
-      if (transcript) {
-        await handleCommand(transcript);
-      } else {
-        const entry = createEntry('jarvis', "I didn't catch that, sir. You can also type your command below.");
-        setConversation(prev => [...prev, entry]);
-        scrollToBottom();
-      }
-    } else if (voice.state === 'idle') {
+      voice.stopListening();
+    } else if (voice.state === 'idle' && !isProcessing) {
+      hasProcessedTranscript.current = false;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       await voice.startListening();
     }
-  }, [voice.state, handleCommand, scrollToBottom]);
+  }, [voice.state, isProcessing]);
 
   const handleQuickAction = useCallback((command: string) => {
     handleCommand(command);
@@ -116,10 +120,24 @@ export function HomeScreen() {
           onContentSizeChange={scrollToBottom}
         />
 
+        {/* Live transcript preview while listening */}
+        {voice.state === 'listening' && voice.partialTranscript ? (
+          <View style={styles.liveTranscript}>
+            <Text style={styles.liveTranscriptLabel}>HEARING:</Text>
+            <Text style={styles.liveTranscriptText}>{voice.partialTranscript}</Text>
+          </View>
+        ) : null}
+
+        {voice.error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{voice.error}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.inputArea}>
           <CommandTextInput
             onSubmit={handleCommand}
-            disabled={isProcessing}
+            disabled={isProcessing || voice.state === 'listening'}
           />
 
           <VoiceButton
@@ -146,6 +164,43 @@ const styles = StyleSheet.create({
   },
   conversationContent: {
     paddingVertical: 8,
+  },
+  liveTranscript: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(0, 212, 255, 0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 212, 255, 0.2)',
+  },
+  liveTranscriptLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#00D4FF',
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  liveTranscriptText: {
+    fontSize: 15,
+    color: '#E0E0E0',
+    fontStyle: 'italic',
+  },
+  errorBanner: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 59, 48, 0.3)',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#FF6B5B',
+    textAlign: 'center',
   },
   inputArea: {
     borderTopWidth: 1,

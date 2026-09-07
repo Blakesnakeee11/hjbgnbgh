@@ -8,12 +8,14 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.jarvis.voiceassistant",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "Jarvis needs microphone access to hear your voice commands.",
         "NSSpeechRecognitionUsageDescription": "Jarvis uses speech recognition to understand your commands."
       }
     },
     "android": {
+      "package": "com.jarvis.voiceassistant",
       "adaptiveIcon": {
         "backgroundColor": "#0D0D1A",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -34,6 +36,13 @@
         "expo-av",
         {
           "microphonePermission": "Jarvis needs microphone access to hear your voice commands."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Jarvis needs your microphone to hear voice commands.",
+          "speechRecognitionPermission": "Jarvis uses speech recognition to understand what you say."
         }
       ]
     ]

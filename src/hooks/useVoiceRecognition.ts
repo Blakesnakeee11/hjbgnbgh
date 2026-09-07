@@ -1,14 +1,17 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { Audio } from 'expo-av';
-import { Platform } from 'react-native';
+import { useState, useCallback, useRef } from 'react';
+import {
+  ExpoSpeechRecognitionModule,
+  useSpeechRecognitionEvent,
+} from 'expo-speech-recognition';
 
 export type VoiceState = 'idle' | 'listening' | 'processing';
 
 interface UseVoiceRecognitionReturn {
   state: VoiceState;
   transcript: string;
+  partialTranscript: string;
   startListening: () => Promise<void>;
-  stopListening: () => Promise<string>;
+  stopListening: () => void;
   error: string | null;
   audioLevel: number;
 }
@@ -16,109 +19,103 @@ interface UseVoiceRecognitionReturn {
 export function useVoiceRecognition(): UseVoiceRecognitionReturn {
   const [state, setState] = useState<VoiceState>('idle');
   const [transcript, setTranscript] = useState('');
+  const [partialTranscript, setPartialTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const levelIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onFinalResult = useRef<((text: string) => void) | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (levelIntervalRef.current) {
-        clearInterval(levelIntervalRef.current);
+  useSpeechRecognitionEvent('start', () => {
+    setState('listening');
+    setPartialTranscript('');
+    setError(null);
+  });
+
+  useSpeechRecognitionEvent('result', (event) => {
+    const text = event.results[0]?.transcript || '';
+
+    if (event.isFinal) {
+      setTranscript(text);
+      setPartialTranscript('');
+      setState('idle');
+      setAudioLevel(0);
+      if (onFinalResult.current) {
+        onFinalResult.current(text);
+        onFinalResult.current = null;
       }
-    };
-  }, []);
+    } else {
+      setPartialTranscript(text);
+    }
+  });
+
+  useSpeechRecognitionEvent('end', () => {
+    setState('idle');
+    setAudioLevel(0);
+    setPartialTranscript('');
+  });
+
+  useSpeechRecognitionEvent('error', (event) => {
+    if (event.error === 'no-speech') {
+      setError("I didn't hear anything, sir. Try again.");
+    } else if (event.error === 'not-allowed') {
+      setError('Microphone permission is required, sir.');
+    } else if (event.error === 'network') {
+      setError('Network issue with speech recognition, sir.');
+    } else {
+      setError(`Speech error: ${event.message}`);
+    }
+    setState('idle');
+    setAudioLevel(0);
+  });
+
+  useSpeechRecognitionEvent('volumechange', (event) => {
+    const normalized = Math.max(0, Math.min(1, (event.value + 2) / 12));
+    setAudioLevel(normalized);
+  });
 
   const startListening = useCallback(async () => {
     try {
       setError(null);
-      setState('listening');
+      setTranscript('');
+      setPartialTranscript('');
 
-      const { granted } = await Audio.requestPermissionsAsync();
+      const { granted } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
       if (!granted) {
-        setError('Microphone permission is required, sir.');
-        setState('idle');
+        setError('Microphone permission is required, sir. Please enable it in Settings.');
         return;
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      });
-
-      const recording = new Audio.Recording();
-      await recording.prepareToRecordAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
-      await recording.startAsync();
-      recordingRef.current = recording;
-
-      levelIntervalRef.current = setInterval(async () => {
-        if (recordingRef.current) {
-          const status = await recordingRef.current.getStatusAsync();
-          if (status.isRecording && status.metering !== undefined) {
-            const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
-            setAudioLevel(normalized);
-          }
-        }
-      }, 100);
-
-    } catch (err) {
-      setError('Failed to start recording. Please check microphone permissions.');
-      setState('idle');
-    }
-  }, []);
-
-  const stopListening = useCallback(async (): Promise<string> => {
-    if (levelIntervalRef.current) {
-      clearInterval(levelIntervalRef.current);
-      levelIntervalRef.current = null;
-    }
-    setAudioLevel(0);
-
-    if (!recordingRef.current) {
-      setState('idle');
-      return '';
-    }
-
-    setState('processing');
-
-    try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
-
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-      });
-
-      if (!uri) {
-        setState('idle');
-        return '';
+      const available = await ExpoSpeechRecognitionModule.isRecognitionAvailable();
+      if (!available) {
+        setError('Speech recognition is not available on this device, sir.');
+        return;
       }
 
-      // Since we can't do on-device STT without a cloud API,
-      // we use a simulated approach for the demo.
-      // In production, you'd send the audio to a speech-to-text API
-      // (Google Cloud Speech, Whisper, etc.)
-      const simulatedText = await simulateSTT();
-      setTranscript(simulatedText);
-      setState('idle');
-      return simulatedText;
-
+      ExpoSpeechRecognitionModule.start({
+        lang: 'en-US',
+        interimResults: true,
+        continuous: false,
+      });
     } catch {
-      setError('Failed to process recording.');
+      setError('Failed to start listening. Please try again.');
       setState('idle');
-      return '';
     }
   }, []);
 
-  return { state, transcript, startListening, stopListening, error, audioLevel };
-}
+  const stopListening = useCallback(() => {
+    try {
+      ExpoSpeechRecognitionModule.stop();
+    } catch {
+      setState('idle');
+    }
+  }, []);
 
-async function simulateSTT(): Promise<string> {
-  // Placeholder — in production, send recorded audio to a speech-to-text service.
-  // For the demo, the app uses the text input as the primary interface,
-  // with the mic button showing the recording/processing flow.
-  return '';
+  return {
+    state,
+    transcript,
+    partialTranscript,
+    startListening,
+    stopListening,
+    error,
+    audioLevel,
+  };
 }
