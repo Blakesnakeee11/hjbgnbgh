@@ -1,5 +1,4 @@
 import * as Speech from 'expo-speech';
-import { Audio } from 'expo-av';
 import { parseCommand } from './CommandParser';
 import { organizeFiles, createFolder, listFiles, deleteFile, getStorageInfo } from './FileManager';
 import { openApp, openSettings, getAvailableApps } from './AppLauncher';
@@ -7,13 +6,20 @@ import { callBridge } from './BridgeClient';
 import { selfUninstall, selfUpdate, openAppInfo } from './SelfManager';
 import { JarvisResponse, ConversationEntry } from '../types';
 
+let AudioModule: any = null;
+try {
+  AudioModule = require('expo-av').Audio;
+} catch {
+  // expo-av not available
+}
+
 const FALLBACK_VOICE = {
   language: 'en-GB',
   pitch: 0.85,
   rate: 0.9,
 };
 
-let currentSound: Audio.Sound | null = null;
+let currentSound: any = null;
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -29,9 +35,10 @@ export function createEntry(role: 'user' | 'jarvis', text: string): Conversation
 }
 
 async function playKokoroAudio(audioUrl: string): Promise<boolean> {
+  if (!AudioModule) return false;
   try {
     await stopSpeaking();
-    const { sound } = await Audio.Sound.createAsync(
+    const { sound } = await AudioModule.Sound.createAsync(
       { uri: audioUrl },
       { shouldPlay: true },
     );
