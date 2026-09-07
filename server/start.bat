@@ -2,12 +2,11 @@
 title Jarvis Bridge Server
 echo ============================================
 echo   Jarvis Bridge Server
-echo   Using your agent at C:\Users\blake\my-agent
+echo   Kokoro TTS + Claude AI
 echo ============================================
 echo.
 
 cd /d "%~dp0"
-npm install
-npx tsx index.ts
+python bridge.py
 
 pause

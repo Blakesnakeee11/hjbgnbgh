@@ -1,9 +1,10 @@
 import { BRIDGE_URL } from '../config';
 
-interface BridgeResponse {
+export interface BridgeResponse {
   text: string;
   action: string | null;
   target: string | null;
+  audioUrl: string | null;
 }
 
 interface ConversationMessage {
@@ -17,7 +18,7 @@ export async function callBridge(
 ): Promise<BridgeResponse | null> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     const res = await fetch(`${BRIDGE_URL}/api/chat`, {
       method: 'POST',
@@ -31,6 +32,11 @@ export async function callBridge(
     if (!res.ok) return null;
 
     const data = await res.json();
+
+    if (data.audioUrl && !data.audioUrl.startsWith('http')) {
+      data.audioUrl = `${BRIDGE_URL}${data.audioUrl}`;
+    }
+
     return data as BridgeResponse;
   } catch {
     return null;
@@ -50,25 +56,5 @@ export async function checkBridgeHealth(): Promise<boolean> {
     return res.ok;
   } catch {
     return false;
-  }
-}
-
-export async function checkForUpdate(): Promise<{ available: boolean; version: string } | null> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const res = await fetch(`${BRIDGE_URL}/api/version`, {
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!res.ok) return null;
-
-    const data = await res.json();
-    return { available: data.latest !== data.version, version: data.latest };
-  } catch {
-    return null;
   }
 }

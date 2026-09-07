@@ -54,7 +54,7 @@ export function HomeScreen() {
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      await speak(response.text);
+      await speak(response.text, response.audioUrl);
 
       if (response.action) {
         await response.action();

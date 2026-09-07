@@ -12,6 +12,7 @@ export interface JarvisResponse {
   text: string;
   action?: () => Promise<void>;
   success: boolean;
+  audioUrl?: string | null;
 }
 
 export interface ConversationEntry {
