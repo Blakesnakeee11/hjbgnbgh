@@ -32,12 +32,13 @@ Set "action" only when the user wants something done. Otherwise null.
 Dry wit encouraged. You're the competent butler, not the eager intern.`;
 
 const CLAUDE_PATH = process.env.CLAUDE_PATH || 'claude';
+const AGENT_DIR = process.env.AGENT_DIR || 'C:\\Users\\blake\\my-agent';
 
 async function askClaude(prompt: string): Promise<string> {
   const { stdout } = await execFileAsync(CLAUDE_PATH, ['-p', prompt, '--output-format', 'text'], {
     timeout: 30000,
     maxBuffer: 1024 * 1024,
-    cwd: process.env.CLAUDE_CWD || undefined,
+    cwd: AGENT_DIR,
   });
   return stdout.trim();
 }
