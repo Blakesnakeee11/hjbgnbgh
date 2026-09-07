@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Jarvis",
+    "slug": "jarvis-voice-assistant",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Jarvis needs microphone access to hear your voice commands.",
+        "NSSpeechRecognitionUsageDescription": "Jarvis uses speech recognition to understand your commands."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0D1A",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "RECORD_AUDIO"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sharing",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Jarvis needs microphone access to hear your voice commands."
+        }
+      ]
+    ]
+  }
+}
