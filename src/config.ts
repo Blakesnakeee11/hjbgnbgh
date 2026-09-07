@@ -1,4 +1,4 @@
-export const BRIDGE_URL = 'http://YOUR_SERVER_IP:3000';
+export const BRIDGE_URL = 'http://192.168.1.227:3000';
 
 export const APP_VERSION = '1.0.0';
 
